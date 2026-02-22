@@ -113,5 +113,5 @@ function togglePwField(inputId, btn) {
 }
 
 // Format role labels
-const ROLE_LABELS = { president: '👑 President', vice_president: '⭐ Vice President', treasurer: '💰 Treasurer', auditor: '📊 Auditor', secretary: '📋 Secretary', officer: '👤 Officer', admin: '🔧 Admin' };
+const ROLE_LABELS = { president: '👑 President', vice_president: '⭐ Vice President', treasurer: '💰 Treasurer', auditor: '📊 Auditor', secretary: '📋 Secretary', officer: '👤 Officer', member: '👁️ Member', admin: '🔧 Admin' };
 function roleLabel(r) { return ROLE_LABELS[r] || r; }
