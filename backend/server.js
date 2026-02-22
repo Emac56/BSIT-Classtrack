@@ -95,7 +95,9 @@ const io = new Server(server, {
   cors: {
     origin: process.env.NODE_ENV === 'production' ? allowedOrigins : '*',
     methods: ['GET', 'POST']
-  }
+  },
+  transports: ['polling', 'websocket'], // ← DAGDAG ITO
+  allowEIO3: true                        // ← AT ITO
 });
 
 // Auth middleware for socket connections
