@@ -243,6 +243,7 @@ function openFeeTypeFormById(id) {
 }
 
 function openFeeTypeForm(ft) {
+  ft = ft || {};
   const isEdit = !!ft.id;
   const studs = window._students || [];
   const assigned = ft.assigned_students || [];
