@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ClassTrack — Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.6.0/jspdf.plugin.autotable.min.js"></script>
+</head>
+<body>
+<div id="app-wrap">
+  <div class="overlay" id="overlay" onclick="closeSidebar()"></div>
+  <aside id="sidebar">
+    <div class="sb-logo">
+      <div class="sb-logo-icon">🔧</div>
+      <div><div class="sb-logo-text">ClassTrack</div><div class="sb-logo-sub">Admin Panel</div></div>
+    </div>
+    <nav class="sb-nav">
+      <div class="nav-group">Overview</div>
+      <div class="nav-item active" data-page="overview" onclick="navigate('overview')"><span class="nav-icon">📊</span>Dashboard</div>
+      <div class="nav-group">Manage</div>
+      <div class="nav-item" data-page="sections" onclick="navigate('sections')"><span class="nav-icon">🏫</span>Sections</div>
+      <div class="nav-item" data-page="users" onclick="navigate('users')"><span class="nav-icon">👥</span>Officers & Users</div>
+      <div class="nav-item" data-page="resets" onclick="navigate('resets')"><span class="nav-icon">🔑</span>Password Resets <span id="resetBadge" class="nav-badge" style="display:none">0</span></div>
+      <div class="nav-group">Analytics</div>
+      <div class="nav-item" data-page="att-summary" onclick="navigate('att-summary')"><span class="nav-icon">📋</span>Attendance Summary</div>
+      <div class="nav-item" data-page="coll-summary" onclick="navigate('coll-summary')"><span class="nav-icon">💰</span>Collection Summary</div>
+      <div class="nav-item" data-page="alerts" onclick="navigate('alerts')"><span class="nav-icon">⚠️</span>Alerts</div>
+      <div class="nav-group">System</div>
+      <div class="nav-item" data-page="logs" onclick="navigate('logs')"><span class="nav-icon">📜</span>Activity Logs</div>
+      <div class="nav-item" data-page="backup" onclick="navigate('backup')"><span class="nav-icon">💾</span>Backup & Restore</div>
+    </nav>
+    <div class="sb-footer">
+      <div class="sb-user">
+        <div class="sb-avatar">🔧</div>
+        <div><div class="sb-user-name">System Admin</div><div class="sb-user-role">admin</div></div>
+      </div>
+      <button class="logout-btn" onclick="doLogout()">🚪 Logout</button>
+    </div>
+  </aside>
+
+  <main id="main">
+    <header id="topbar">
+      <button class="tb-menu" onclick="toggleSidebar()">☰</button>
+      <span class="page-title" id="pageTitle">Admin Dashboard</span>
+      <div class="topbar-right">
+        <button class="icon-btn" id="darkBtn" onclick="toggleDark()" title="Toggle Dark Mode">☀️</button>
+      </div>
+    </header>
+    <div id="page-content">
+      <div class="page active" id="page-overview"></div>
+      <div class="page" id="page-sections"></div>
+      <div class="page" id="page-users"></div>
+      <div class="page" id="page-resets"></div>
+      <div class="page" id="page-att-summary"></div>
+      <div class="page" id="page-coll-summary"></div>
+      <div class="page" id="page-alerts"></div>
+      <div class="page" id="page-logs"></div>
+      <div class="page" id="page-backup"></div>
+    </div>
+  </main>
+</div>
+
+<div class="toast-wrap" id="toastWrap"></div>
+<div id="modalContainer"></div>
+
+<script src="js/api.js"></script>
+<script src="js/utils.js"></script>
+<script>
+// ============ ADMIN PANEL ============
+function getUser() { try { return JSON.parse(localStorage.getItem('ct_user')); } catch(e) { return null; } }
+function doLogout() { localStorage.removeItem('ct_user'); localStorage.removeItem('ct_token'); window.location.href = '/login.html'; }
+
+const PAGE_TITLES = { overview:'Admin Dashboard', sections:'Section Management', users:'Officers & Users', resets:'Password Reset Requests', 'att-summary':'Attendance Summary', 'coll-summary':'Collection Summary', alerts:'Alerts & Notifications', logs:'Activity Logs', backup:'Backup & Restore' };
+
+function navigate(page) {
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.toggle('active', el.dataset.page === page));
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const el = document.getElementById('page-' + page);
+  if (el) el.classList.add('active');
+  document.getElementById('pageTitle').textContent = PAGE_TITLES[page] || page;
+  closeSidebar();
+  const renders = { overview: renderOverview, sections: renderSections, users: renderUsers, resets: renderResets, 'att-summary': renderAttSummary, 'coll-summary': renderCollSummary, alerts: renderAlerts, logs: renderLogs, backup: renderBackup };
+  if (renders[page]) renders[page]();
+  window._currentPage = page;
+}
+
+function toggleDark() {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark');
+  document.getElementById('darkBtn').textContent = isDark ? '☀️' : '🌙';
+}
+function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); document.getElementById('overlay').classList.toggle('open'); }
+function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('open'); }
+
+// ====== OVERVIEW ======
+async function renderOverview() {
+  const c = document.getElementById('page-overview');
+  c.innerHTML = loadingHTML();
+  try {
+    const d = await api.adminOverview();
+    const sections = d.sections, users = d.users;
+    const totalStudents = sections.reduce((s,x) => s+parseInt(x.student_count||0), 0);
+    c.innerHTML = `
+      <div class="stats-grid animate">
+        <div class="stat-card"><div class="stat-icon si-blue">🏫</div><div><div class="stat-val">${sections.length}</div><div class="stat-label">Sections</div></div></div>
+        <div class="stat-card"><div class="stat-icon si-green">👥</div><div><div class="stat-val">${totalStudents}</div><div class="stat-label">Total Students</div></div></div>
+        <div class="stat-card"><div class="stat-icon si-purple">👤</div><div><div class="stat-val">${users.length}</div><div class="stat-label">Officers</div></div></div>
+      </div>
+
+      <div class="two-col animate animate-delay-1">
+        <div class="card">
+          <div class="card-header"><h2>🏫 Sections</h2><button class="btn btn-primary btn-sm" onclick="navigate('sections')">Manage →</button></div>
+          <div class="tbl-wrap"><table>
+            <thead><tr><th>Name</th><th>Year</th><th>Students</th><th>Officers</th></tr></thead>
+            <tbody>${sections.slice(0,8).map(s => `<tr>
+              <td><strong>${esc(s.name)}</strong><br><code style="font-size:.7rem">${esc(s.code||'')}</code></td>
+              <td class="text-muted text-sm">${esc(s.school_year)}</td>
+              <td>${s.student_count}</td>
+              <td>${s.member_count}</td>
+            </tr>`).join('')}</tbody>
+          </table></div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><h2>👥 Recent Officers</h2><button class="btn btn-primary btn-sm" onclick="navigate('users')">Manage →</button></div>
+          <div class="tbl-wrap"><table>
+            <thead><tr><th>Name</th><th>Role</th><th>Section</th></tr></thead>
+            <tbody>${users.slice(0,8).map(u => `<tr>
+              <td><strong>${esc(u.full_name)}</strong><br><code style="font-size:.7rem">@${esc(u.username)}</code></td>
+              <td>${roleLabel(u.role)}</td>
+              <td class="text-sm text-muted">${esc(u.section_name||'—')}</td>
+            </tr>`).join('')}</tbody>
+          </table></div>
+        </div>
+      </div>`;
+  } catch(e) { c.innerHTML = `<div class="empty-state"><span class="empty-icon">❌</span><h3>${esc(e.message)}</h3></div>`; }
+}
+
+// ====== SECTIONS ======
+async function renderSections() {
+  const c = document.getElementById('page-sections');
+  c.innerHTML = loadingHTML();
+  try {
+    const res = await api.adminSections();
+    window._adminSections = res.data;
+    const rows = res.data.map(s => `<tr>
+      <td><strong>${esc(s.name)}</strong></td>
+      <td class="text-muted text-sm">${esc(s.school_year)}</td>
+      <td class="text-sm">${esc(s.adviser||'—')}</td>
+      <td><code>${esc(s.code||'—')}</code></td>
+      <td>${s.student_count}</td>
+      <td>${s.member_count}</td>
+      <td>
+        <button class="btn btn-ghost btn-sm" onclick="openSectionForm(${s.id})">✏️</button>
+        <button class="btn btn-ghost btn-sm" onclick="deleteSectionAdmin(${s.id},'${esc(s.name)}')">🗑️</button>
+      </td>
+    </tr>`).join('');
+    c.innerHTML = `<div class="card animate">
+      <div class="card-header">
+        <h2>🏫 Sections <span class="text-muted text-sm">(${res.data.length})</span></h2>
+        <button class="btn btn-primary btn-sm" onclick="openSectionForm()">+ Add Section</button>
+      </div>
+      ${res.data.length ? `<div class="tbl-wrap"><table>
+        <thead><tr><th>Name</th><th>School Year</th><th>Adviser</th><th>Code</th><th>Students</th><th>Officers</th><th>Actions</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>` : '<div class="empty-state"><span class="empty-icon">🏫</span><h3>No sections</h3></div>'}
+    </div>`;
+  } catch(e) { c.innerHTML = `<div class="empty-state"><span class="empty-icon">❌</span><h3>${esc(e.message)}</h3></div>`; }
+}
+
+function openSectionForm(id) {
+  const s = id ? (window._adminSections||[]).find(x=>x.id===id) : {};
+  const isEdit = !!s;
+  openModal((isEdit?'✏️ Edit':'+ Add') + ' Section', `
+    <form onsubmit="submitSection(event,${id||'null'})">
+      <div class="form-grid">
+        <div class="form-group" style="grid-column:1/-1"><label>Section Name *</label><input name="name" value="${esc(s.name||'')}" required placeholder="e.g. BSCS 3A"></div>
+        <div class="form-group"><label>School Year *</label><input name="school_year" value="${esc(s.school_year||'')}" required placeholder="2024-2025"></div>
+        <div class="form-group"><label>Adviser</label><input name="adviser" value="${esc(s.adviser||'')}" placeholder="Teacher name"></div>
+        <div class="form-group" style="grid-column:1/-1"><label>Collection Target (₱)</label><input name="collection_target" type="number" value="${s.collection_target||0}" placeholder="0 = disabled"></div>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn btn-outline" onclick="closeModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary">${isEdit?'Update':'Create'} Section</button>
+      </div>
+    </form>`);
+}
+
+async function submitSection(e, id) {
+  e.preventDefault();
+  const f = e.target;
+  const data = { name: f.name.value, school_year: f.school_year.value, adviser: f.adviser.value, collection_target: parseFloat(f.collection_target.value)||0 };
+  try {
+    if (id) await api.adminUpdateSection(id, data);
+    else await api.adminCreateSection(data);
+    toast(id?'Section updated!':'Section created!'); closeModal(); renderSections();
+  } catch(err) { toast(err.message, 'error'); }
+}
+
+async function deleteSectionAdmin(id, name) {
+  confirmAction(`<strong>⚠️ WARNING:</strong> Delete section <strong>${esc(name)}</strong>? This will permanently delete ALL students, attendance, fees, and officers in this section!`, async function() {
+    try { await api.adminDeleteSection(id); toast('Section deleted'); renderSections(); } catch(e) { toast(e.message, 'error'); }
+  }, '⚠️ Delete Everything');
+}
+
+// ====== USERS ======
+async function renderUsers() {
+  const c = document.getElementById('page-users');
+  c.innerHTML = loadingHTML();
+  try {
+    const [ovRes, secRes] = await Promise.all([api.adminOverview(), api.adminSections()]);
+    window._adminUsers = ovRes.users;
+    window._adminSections = secRes.data;
+    const rows = ovRes.users.map(u => `<tr>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="sb-avatar" style="width:28px;height:28px;font-size:.72rem">${(u.full_name||'?').charAt(0)}</div>
+          <strong>${esc(u.full_name)}</strong>
+        </div>
+      </td>
+      <td><code>@${esc(u.username)}</code></td>
+      <td>${roleLabel(u.role)}</td>
+      <td class="text-sm text-muted">${esc(u.section_name||'No section')}</td>
+      <td class="text-sm text-muted">${fmtDate(u.created_at)}</td>
+      <td>
+        <button class="btn btn-ghost btn-sm" onclick="openUserForm(${u.id})">✏️</button>
+        <button class="btn btn-ghost btn-sm" onclick="openResetUserPw(${u.id},'${esc(u.full_name)}')">🔑</button>
+        <button class="btn btn-ghost btn-sm" onclick="deleteUser(${u.id},'${esc(u.full_name)}')">🗑️</button>
+      </td>
+    </tr>`).join('');
+    c.innerHTML = `<div class="card animate">
+      <div class="card-header">
+        <h2>👥 Officers & Users <span class="text-muted text-sm">(${ovRes.users.length})</span></h2>
+        <button class="btn btn-primary btn-sm" onclick="openUserForm()">+ Add Officer</button>
+      </div>
+      ${ovRes.users.length ? `<div class="tbl-wrap"><table>
+        <thead><tr><th>Name</th><th>Username</th><th>Role</th><th>Section</th><th>Created</th><th>Actions</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>` : '<div class="empty-state"><span class="empty-icon">👥</span><h3>No officers</h3></div>'}
+    </div>`;
+  } catch(e) { c.innerHTML = `<div class="empty-state"><span class="empty-icon">❌</span><h3>${esc(e.message)}</h3></div>`; }
+}
+
+function openUserForm(id) {
+  const u = id ? (window._adminUsers||[]).find(x=>x.id===id) : {};
+  const sections = window._adminSections || [];
+  const isEdit = id && !!u;
+  const secOpts = sections.map(s => `<option value="${s.id}" ${u&&u.section_id==s.id?'selected':''}>${esc(s.name)} (${esc(s.school_year)})</option>`).join('');
+  const roleOpts = ['president','vice_president','treasurer','auditor','secretary','officer'].map(r => `<option value="${r}" ${u&&u.role===r?'selected':''}>${roleLabel(r)}</option>`).join('');
+  openModal((isEdit?'✏️ Edit':'+ Add') + ' Officer', `
+    <form onsubmit="submitUser(event,${id||'null'})">
+      <div class="form-grid">
+        <div class="form-group" style="grid-column:1/-1"><label>Full Name *</label><input name="full_name" value="${esc(u.full_name||'')}" required placeholder="Full name"></div>
+        ${!isEdit ? `<div class="form-group"><label>Username *</label><input name="username" required placeholder="Username"></div>
+        <div class="form-group"><label>Password *</label><div class="input-pw"><input type="password" id="newUserPw" name="password" required placeholder="Min 6 chars"><button type="button" onclick="togglePwField('newUserPw',this)">👁️</button></div></div>` : ''}
+        <div class="form-group"><label>Role *</label><select name="role" required>${roleOpts}</select></div>
+        <div class="form-group"><label>Section</label><select name="section_id"><option value="">No section</option>${secOpts}</select></div>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn btn-outline" onclick="closeModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary">${isEdit?'Update':'Create'} Officer</button>
+      </div>
+    </form>`);
+}
+
+async function submitUser(e, id) {
+  e.preventDefault();
+  const f = e.target;
+  const data = { full_name: f.full_name.value, role: f.role.value, section_id: f.section_id.value||null };
+  if (!id) { data.username = f.username.value; data.password = f.password.value; }
+  try {
+    if (id) await api.adminUpdateUser(id, data);
+    else await api.adminCreateUser(data);
+    toast(id?'Officer updated!':'Officer created!'); closeModal(); renderUsers();
+  } catch(err) { toast(err.message, 'error'); }
+}
+
+function openResetUserPw(id, name) {
+  openModal('🔑 Reset Password', `
+    <p style="margin-bottom:14px;font-size:.88rem">Reset password for <strong>${esc(name)}</strong></p>
+    <div class="form-group" style="margin-bottom:14px"><label>New Password *</label>
+      <div class="input-pw"><input type="password" id="resetPwInput" placeholder="Min 6 characters"><button type="button" onclick="togglePwField('resetPwInput',this)">👁️</button></div>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-danger" onclick="doResetUserPw(${id})">Reset Password</button>
+    </div>`, 420);
+}
+
+async function doResetUserPw(id) {
+  const pw = document.getElementById('resetPwInput').value;
+  if (!pw || pw.length < 6) { toast('Min 6 characters', 'error'); return; }
+  try { await api.adminResetPassword(id, pw); toast('Password reset!'); closeModal(); } catch(e) { toast(e.message, 'error'); }
+}
+
+async function deleteUser(id, name) {
+  confirmAction(`Delete officer <strong>${esc(name)}</strong>?`, async function() {
+    try { await api.adminDeleteUser(id); toast('Officer deleted'); renderUsers(); } catch(e) { toast(e.message, 'error'); }
+  });
+}
+
+// ====== PASSWORD RESET REQUESTS ======
+async function renderResets() {
+  const c = document.getElementById('page-resets');
+  c.innerHTML = loadingHTML();
+  try {
+    const res = await api.adminResetRequests();
+    const badge = document.getElementById('resetBadge');
+    if (badge) { badge.textContent = res.data.length; badge.style.display = res.data.length > 0 ? '' : 'none'; }
+    const rows = res.data.map(r => `<tr>
+      <td><strong>${esc(r.full_name)}</strong></td>
+      <td><code>@${esc(r.username)}</code></td>
+      <td>${roleLabel(r.role)}</td>
+      <td class="text-sm text-muted">${esc(r.section_name||'—')}</td>
+      <td class="text-sm text-muted">${fmtTime(r.requested_at)}</td>
+      <td>
+        <button class="btn btn-primary btn-sm" onclick="resolveReset(${r.id},'${esc(r.full_name)}')">🔑 Reset</button>
+      </td>
+    </tr>`).join('');
+    c.innerHTML = `<div class="card animate">
+      <div class="card-header"><h2>🔑 Password Reset Requests</h2></div>
+      ${res.data.length ? `<div class="tbl-wrap"><table>
+        <thead><tr><th>Name</th><th>Username</th><th>Role</th><th>Section</th><th>Requested</th><th>Action</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>` : '<div class="empty-state"><span class="empty-icon">✅</span><h3>No pending requests</h3></div>'}
+    </div>`;
+  } catch(e) { c.innerHTML = `<div class="empty-state"><span class="empty-icon">❌</span><h3>${esc(e.message)}</h3></div>`; }
+}
+
+function resolveReset(id, name) {
+  openModal('🔑 Resolve Password Reset', `
+    <p style="margin-bottom:14px;font-size:.88rem">Set new password for <strong>${esc(name)}</strong></p>
+    <div class="form-group" style="margin-bottom:14px"><label>New Password</label>
+      <div class="input-pw"><input type="password" id="resolveInput" value="classtrack123" placeholder="Min 6 characters"><button type="button" onclick="togglePwField('resolveInput',this)">👁️</button></div>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-success" onclick="doResolveReset(${id})">✅ Reset & Resolve</button>
+    </div>`, 420);
+}
+
+async function doResolveReset(id) {
+  const pw = document.getElementById('resolveInput').value;
+  if (!pw || pw.length < 6) { toast('Min 6 characters', 'error'); return; }
+  try { await api.adminResolveReset(id, pw); toast('Password reset and resolved!'); closeModal(); renderResets(); } catch(e) { toast(e.message, 'error'); }
+}
+
+// ====== ATTENDANCE SUMMARY ======
+async function renderAttSummary() {
+  const c = document.getElementById('page-att-summary');
+  c.innerHTML = loadingHTML();
+  try {
+    const res = await api.adminAttSummary();
+    const rows = res.data.map(r => `<tr>
+      <td><strong>${esc(r.section_name)}</strong></td>
+      <td>${r.total_sessions}</td>
+      <td><span class="badge badge-present">${r.total_present||0}</span></td>
+      <td><span class="badge badge-absent">${r.total_absent||0}</span></td>
+    </tr>`).join('');
+    c.innerHTML = `<div class="card animate">
+      <div class="card-header"><h2>📋 Attendance Summary by Section</h2></div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Section</th><th>Sessions</th><th>Total Present</th><th>Total Absent</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>
+    </div>`;
+  } catch(e) { c.innerHTML = `<div class="empty-state"><span class="empty-icon">❌</span><h3>${esc(e.message)}</h3></div>`; }
+}
+
+// ====== COLLECTION SUMMARY ======
+async function renderCollSummary() {
+  const c = document.getElementById('page-coll-summary');
+  c.innerHTML = loadingHTML();
+  try {
+    const res = await api.adminCollSummary();
+    const rows = res.data.map(r => {
+      const target = parseFloat(r.collection_target||0);
+      const collected = parseFloat(r.total_collected||0);
+      const pct = target > 0 ? Math.min(100, Math.round((collected/target)*100)) : 0;
+      return `<tr>
+        <td><strong>${esc(r.section_name)}</strong></td>
+        <td><strong>${peso(collected)}</strong></td>
+        <td>${target > 0 ? peso(target) : '—'}</td>
+        <td>${r.payment_count}</td>
+        <td>${target > 0 ? `<div class="progress-wrap" style="width:100px;display:inline-block"><div class="progress-bar ${pct>=100?'green':'primary'}" style="width:${pct}%"></div></div> ${pct}%` : '—'}</td>
+      </tr>`;
+    }).join('');
+    c.innerHTML = `<div class="card animate">
+      <div class="card-header"><h2>💰 Collection Summary by Section</h2></div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Section</th><th>Total Collected</th><th>Target</th><th>Payments</th><th>Progress</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>
+    </div>`;
+  } catch(e) { c.innerHTML = `<div class="empty-state"><span class="empty-icon">❌</span><h3>${esc(e.message)}</h3></div>`; }
+}
+
+// ====== ALERTS ======
+async function renderAlerts() {
+  const c = document.getElementById('page-alerts');
+  c.innerHTML = loadingHTML();
+  try {
+    const res = await api.adminAlerts();
+    const atRiskHTML = res.at_risk.length === 0
+      ? '<div class="empty-state" style="padding:16px"><span class="empty-icon" style="font-size:1.5rem">✅</span><p>No at-risk students</p></div>'
+      : `<div class="tbl-wrap"><table>
+          <thead><tr><th>Student</th><th>Section</th><th>Absences</th></tr></thead>
+          <tbody>${res.at_risk.map(r => `<tr class="at-risk">
+            <td><strong>${esc(r.first_name)} ${esc(r.last_name)}</strong></td>
+            <td>${esc(r.section_name)}</td>
+            <td><span class="badge badge-absent">${r.absent_count}</span></td>
+          </tr>`).join('')}</tbody>
+        </table></div>`;
+    const overdueHTML = res.overdue.length === 0
+      ? '<div class="empty-state" style="padding:16px"><span class="empty-icon" style="font-size:1.5rem">✅</span><p>No overdue fees</p></div>'
+      : `<div class="tbl-wrap"><table>
+          <thead><tr><th>Student</th><th>Section</th><th>Fee</th><th>Due Date</th></tr></thead>
+          <tbody>${res.overdue.map(r => `<tr>
+            <td><strong>${esc(r.first_name)} ${esc(r.last_name)}</strong></td>
+            <td>${esc(r.section_name)}</td>
+            <td>${esc(r.fee_name)}</td>
+            <td class="overdue">${fmtDate(r.due_date)}</td>
+          </tr>`).join('')}</tbody>
+        </table></div>`;
+    c.innerHTML = `
+      <div class="card animate mb-5">
+        <div class="card-header"><h2>🔴 At-Risk Students (3+ Absences)</h2><span class="badge badge-absent">${res.at_risk.length}</span></div>
+        ${atRiskHTML}
+      </div>
+      <div class="card animate animate-delay-1">
+        <div class="card-header"><h2>💰 Overdue Fees</h2><span class="badge badge-unpaid">${res.overdue.length}</span></div>
+        ${overdueHTML}
+      </div>`;
+  } catch(e) { c.innerHTML = `<div class="empty-state"><span class="empty-icon">❌</span><h3>${esc(e.message)}</h3></div>`; }
+}
+
+// ====== LOGS ======
+async function renderLogs() {
+  const c = document.getElementById('page-logs');
+  c.innerHTML = `
+    <div class="card animate">
+      <div class="card-header">
+        <h2>📜 Activity Logs</h2>
+        <div class="btn-group">
+          <button class="btn btn-outline btn-sm" onclick="exportLogsPDF()">📄 PDF</button>
+          <button class="btn btn-outline btn-sm" onclick="exportLogsCSV()">📊 CSV</button>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="toolbar" style="margin-bottom:14px">
+          <input type="date" id="logDateFrom" class="filter-sel" placeholder="From date">
+          <input type="date" id="logDateTo" class="filter-sel" placeholder="To date">
+          <button class="btn btn-outline btn-sm" onclick="loadLogs()">🔍 Filter</button>
+          <button class="btn btn-ghost btn-sm" onclick="document.getElementById('logDateFrom').value='';document.getElementById('logDateTo').value='';loadLogs()">Clear</button>
+        </div>
+      </div>
+      <div id="logsTable">${loadingHTML()}</div>
+    </div>`;
+  loadLogs();
+}
+
+async function loadLogs() {
+  const params = {};
+  const from = document.getElementById('logDateFrom')?.value;
+  const to = document.getElementById('logDateTo')?.value;
+  if (from) params.date_from = from;
+  if (to) params.date_to = to;
+  const tbl = document.getElementById('logsTable');
+  if (!tbl) return;
+  tbl.innerHTML = loadingHTML();
+  try {
+    const res = await api.adminLogs(params);
+    window._logs = res.data;
+    const rows = res.data.map(l => `<tr>
+      <td class="text-sm">${fmtTime(l.created_at)}</td>
+      <td class="text-sm text-muted">${esc(l.section_name||'Admin')}</td>
+      <td class="text-sm text-muted">${esc(l.user_name||'—')}</td>
+      <td class="text-sm">${esc(l.action)}</td>
+    </tr>`).join('');
+    tbl.innerHTML = res.data.length ? `<div class="tbl-wrap"><table>
+      <thead><tr><th>Time</th><th>Section</th><th>Officer</th><th>Action</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>` : '<div class="empty-state"><span class="empty-icon">📜</span><h3>No logs found</h3></div>';
+  } catch(e) { tbl.innerHTML = `<div class="empty-state"><span class="empty-icon">❌</span><h3>${esc(e.message)}</h3></div>`; }
+}
+
+function exportLogsPDF() {
+  const logs = window._logs || [];
+  exportPDF('Activity Logs', ['Time','Section','Officer','Action'],
+    logs.map(l => [fmtDate(l.created_at), l.section_name||'', l.user_name||'', l.action]),
+    'activity-logs.pdf');
+}
+
+function exportLogsCSV() {
+  const logs = window._logs || [];
+  exportCSV(['Time','Section','Officer','Action'],
+    logs.map(l => [fmtDate(l.created_at), l.section_name||'', l.user_name||'', l.action]),
+    'activity-logs.csv');
+}
+
+// ====== BACKUP ======
+async function renderBackup() {
+  const c = document.getElementById('page-backup');
+  c.innerHTML = `
+    <div style="max-width:700px">
+      <div class="card animate mb-5">
+        <div class="card-header"><h2>💾 Export Backup</h2></div>
+        <div class="card-body">
+          <p class="text-sm text-muted" style="margin-bottom:16px">Download a full JSON backup of all system data including sections, students, attendance, fees, and logs.</p>
+          <button class="btn btn-primary" onclick="doBackup()">⬇️ Download Full Backup</button>
+        </div>
+      </div>
+
+      <div class="card animate animate-delay-1">
+        <div class="card-header"><h2>📤 Export by Type</h2></div>
+        <div class="card-body" style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn btn-outline" onclick="exportStudentsAdmin()">👥 Students (Excel)</button>
+          <button class="btn btn-outline" onclick="exportSectionsAdmin()">🏫 Sections (CSV)</button>
+          <button class="btn btn-outline" onclick="exportLogsCSVAdmin()">📜 Logs (CSV)</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+async function doBackup() {
+  try {
+    const res = await api.adminBackup();
+    const blob = new Blob([JSON.stringify(res, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `classtrack-backup-${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    toast('Backup downloaded!');
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+async function exportStudentsAdmin() {
+  const res = await api.adminSections();
+  const sectionId = res.data[0]?.id;
+  if (!sectionId) { toast('No sections found', 'warning'); return; }
+  try {
+    const backup = await api.adminBackup();
+    const students = backup.data.students || [];
+    exportExcel('Students', ['Student ID','First Name','Last Name','Gender','Contact','Email','Section ID'],
+      students.map(s => [s.student_id, s.first_name, s.last_name, s.gender||'', s.contact_number||'', s.email||'', s.section_id]),
+      'all-students.xlsx');
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+async function exportSectionsAdmin() {
+  try {
+    const res = await api.adminSections();
+    exportCSV(['Name','School Year','Adviser','Code','Students','Officers'],
+      res.data.map(s => [s.name, s.school_year, s.adviser||'', s.code||'', s.student_count, s.member_count]),
+      'sections.csv');
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+async function exportLogsCSVAdmin() {
+  try {
+    const res = await api.adminLogs({});
+    exportCSV(['Time','Section','Officer','Action'],
+      res.data.map(l => [l.created_at, l.section_name||'', l.user_name||'', l.action]),
+      'activity-logs.csv');
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+// ====== INIT ======
+document.addEventListener('DOMContentLoaded', async function() {
+  const user = getUser();
+  if (!user) { window.location.href = '/login.html'; return; }
+  if (user.role !== 'admin') { window.location.href = '/'; return; }
+  navigate('overview');
+  // Check pending resets
+  try {
+    const res = await api.adminResetRequests();
+    const badge = document.getElementById('resetBadge');
+    if (badge && res.data.length > 0) { badge.textContent = res.data.length; badge.style.display = ''; }
+  } catch(e) {}
+});
+</script>
+</body>
+</html>

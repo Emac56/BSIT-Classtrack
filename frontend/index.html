@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ClassTrack</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.6.0/jspdf.plugin.autotable.min.js"></script>
+</head>
+<body>
+<div id="app-wrap">
+  <div class="overlay" id="overlay" onclick="closeSidebar()"></div>
+  <aside id="sidebar">
+    <div class="sb-logo">
+      <div class="sb-logo-icon">🎓</div>
+      <div>
+        <div class="sb-logo-text">ClassTrack</div>
+        <div class="sb-logo-sub">Officer System</div>
+      </div>
+    </div>
+    <div class="sb-section-info" id="sbSectionInfo">
+      <div class="sb-section-name" id="sbSectionName">Loading...</div>
+      <div class="sb-section-year" id="sbSectionYear"></div>
+      <div class="sb-code" id="sbCode" style="display:none" onclick="copyCode()">
+        🔑 <span id="sbCodeVal"></span>
+      </div>
+    </div>
+    <nav class="sb-nav">
+      <div class="nav-group">Overview</div>
+      <div class="nav-item active" data-page="dashboard" onclick="navigate('dashboard')"><span class="nav-icon">📊</span>Dashboard</div>
+      <div class="nav-group">Management</div>
+      <div class="nav-item" data-page="students" onclick="navigate('students')"><span class="nav-icon">👥</span>Students</div>
+      <div class="nav-item" data-page="attendance" onclick="navigate('attendance')"><span class="nav-icon">📋</span>Attendance</div>
+      <div class="nav-item" data-page="fees" onclick="navigate('fees')"><span class="nav-icon">💰</span>Fees & Payments</div>
+      <div class="nav-group">Section</div>
+      <div class="nav-item" data-page="fee-types" onclick="navigate('fee-types')"><span class="nav-icon">🏷️</span>Fee Types</div>
+      <div class="nav-item" data-page="announcements" onclick="navigate('announcements')"><span class="nav-icon">📢</span>Announcements</div>
+      <div class="nav-item" data-page="members" onclick="navigate('members')"><span class="nav-icon">👤</span>Officers</div>
+      <div class="nav-group">Account</div>
+      <div class="nav-item" data-page="profile" onclick="navigate('profile')"><span class="nav-icon">⚙️</span>Profile & Settings</div>
+      <div class="nav-item" data-page="game" onclick="navigate('game')" style="margin-top:4px"><span class="nav-icon">🎮</span>Mini Games</div>
+      <div class="nav-item" data-page="chat" onclick="navigate('chat')"><span class="nav-icon">💬</span>Section Chat <span class="nav-badge" id="chatBadge" style="display:none">•</span></div>
+    </nav>
+    <div class="sb-footer">
+      <div class="sb-user" onclick="navigate('profile')">
+        <div class="sb-avatar" id="sbAvatar">?</div>
+        <div class="flex-1" style="min-width:0">
+          <div class="sb-user-name" id="sbUserName">...</div>
+          <div class="sb-user-role" id="sbUserRole">...</div>
+        </div>
+      </div>
+      <button class="logout-btn" onclick="doLogout()">🚪 Logout</button>
+    </div>
+  </aside>
+
+  <main id="main">
+    <header id="topbar">
+      <button class="tb-menu" onclick="toggleSidebar()">☰</button>
+      <span class="page-title" id="pageTitle">Dashboard</span>
+      <div class="topbar-right">
+        <button class="icon-btn" id="darkBtn" onclick="toggleDark()" title="Toggle Dark Mode">🌙</button>
+      </div>
+    </header>
+    <div id="page-content">
+      <div class="page active" id="page-dashboard"></div>
+      <div class="page" id="page-students"></div>
+      <div class="page" id="page-attendance"></div>
+      <div class="page" id="page-fees"></div>
+      <div class="page" id="page-fee-types"></div>
+      <div class="page" id="page-announcements"></div>
+      <div class="page" id="page-members"></div>
+      <div class="page" id="page-profile"></div>
+      <div class="page" id="page-game"></div>
+      <div class="page" id="page-chat"></div>
+    </div>
+  </main>
+</div>
+
+<div class="toast-wrap" id="toastWrap"></div>
+<div id="modalContainer"></div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="js/api.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/dashboard.js"></script>
+<script src="js/students.js"></script>
+<script src="js/attendance.js"></script>
+<script src="js/fees.js"></script>
+<script src="js/game.js"></script>
+<script src="js/chat.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+{
+  "name": "classtrack-student-management",
+  "version": "1.0.0",
+  "description": "Student Management System with Attendance & Fee Tracking",
+  "main": "backend/server.js",
+  "scripts": {
+    "start": "node backend/server.js",
+    "dev": "cd backend && nodemon server.js",
+    "install-deps": "cd backend && npm install"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "pg": "^8.11.3"
+  }
+}

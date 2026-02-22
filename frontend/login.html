@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ClassTrack — Login</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --primary:#4f46e5;--primary-dark:#4338ca;--primary-light:rgba(79,70,229,.1);
+  --surface:#fff;--surface2:#f8f7ff;--border:#e5e2f8;--text:#1a1633;--text2:#5c5880;--text3:#9b98b8;
+  --success:#10b981;--danger:#ef4444;--radius:12px;--shadow:0 4px 24px rgba(79,70,229,.1);
+}
+[data-theme="dark"]{--surface:#12102a;--surface2:#1a1735;--border:#2a2650;--text:#f0eeff;--text2:#9b98b8;--text3:#5c5880;}
+body{font-family:'DM Sans',sans-serif;min-height:100vh;background:var(--surface2);display:grid;place-items:center;padding:20px;transition:background .3s}
+.theme-toggle{position:fixed;top:16px;right:16px;background:var(--surface);border:1px solid var(--border);border-radius:8px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:1rem;transition:all .2s}
+.theme-toggle:hover{background:var(--primary-light)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:36px 32px;width:100%;max-width:420px;box-shadow:var(--shadow)}
+.logo{text-align:center;margin-bottom:28px}
+.logo-icon{width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,#4f46e5,#06b6d4);display:inline-flex;align-items:center;justify-content:center;font-size:1.6rem;margin-bottom:10px}
+.logo h1{font-size:1.5rem;font-weight:800;color:var(--text)}
+.logo p{font-size:.8rem;color:var(--text3);margin-top:2px}
+.tabs{display:flex;gap:3px;background:var(--surface2);border-radius:10px;padding:3px;margin-bottom:24px}
+.tab{flex:1;padding:8px;text-align:center;font-size:.8rem;font-weight:600;color:var(--text2);border-radius:8px;cursor:pointer;border:none;background:none;font-family:inherit;transition:all .2s}
+.tab.active{background:var(--primary);color:#fff}
+.fs{display:none}.fs.active{display:block}
+.fg{margin-bottom:14px}
+.fg label{display:block;font-size:.75rem;font-weight:600;color:var(--text2);margin-bottom:5px}
+.fg input,.fg select{width:100%;padding:10px 13px;border:1.5px solid var(--border);border-radius:9px;font-size:.875rem;color:var(--text);font-family:inherit;outline:none;background:var(--surface);transition:border-color .2s}
+.fg input:focus,.fg select:focus{border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-light)}
+.fg select option{background:var(--surface)}
+.pw-wrap{position:relative}.pw-wrap input{padding-right:44px}
+.pw-btn{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text3);font-size:1rem;padding:4px}
+.pw-btn:hover{color:var(--primary)}
+.role-label{font-size:.75rem;font-weight:600;color:var(--text2);margin-bottom:8px}
+.role-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:14px}
+.role-btn{border:1.5px solid var(--border);border-radius:10px;padding:9px 4px;text-align:center;cursor:pointer;font-size:.7rem;color:var(--text2);background:none;font-family:inherit;font-weight:600;transition:all .2s}
+.role-btn:hover{border-color:var(--primary);color:var(--primary)}
+.role-btn.sel{border-color:var(--primary);background:var(--primary-light);color:var(--primary)}
+.role-emoji{font-size:1.2rem;display:block;margin-bottom:2px}
+.mode-box{background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:12px;margin-bottom:14px}
+.mode-box-title{font-size:.72rem;color:var(--primary);font-weight:700;margin-bottom:8px}
+.mode-btns{display:flex;gap:4px;margin-bottom:10px}
+.mode-btn{flex:1;padding:7px;border-radius:7px;border:1.5px solid var(--border);background:none;color:var(--text2);font-size:.75rem;cursor:pointer;font-family:inherit;font-weight:600;transition:all .2s}
+.mode-btn.active{background:var(--primary-light);color:var(--primary);border-color:var(--primary)}
+.sub{display:none}.sub.show{display:block}
+.code-preview{border-radius:8px;padding:7px 11px;margin-top:6px;font-size:.78rem}
+.code-preview.ok{background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);color:#059669}
+.code-preview.bad{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:#dc2626}
+.btn{width:100%;padding:11px;background:var(--primary);color:#fff;border:none;border-radius:9px;font-size:.875rem;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn:hover{background:var(--primary-dark)}
+.btn:active{transform:scale(.98)}
+.btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.msg{border-radius:9px;padding:10px 13px;font-size:.8rem;margin-bottom:12px}
+.msg.err{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:#dc2626}
+.msg.ok{background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);color:#059669}
+.divider{text-align:center;color:var(--text3);font-size:.72rem;margin:12px 0;display:flex;align-items:center;gap:8px}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border)}
+.back-link{text-align:center;margin-top:12px}
+.back-link a{font-size:.8rem;color:var(--primary);cursor:pointer;font-weight:600}
+.back-link a:hover{opacity:.8}
+.admin-link{text-align:center;margin-top:16px}
+.admin-link a{font-size:.75rem;color:var(--text3);cursor:pointer}
+.admin-link a:hover{color:var(--primary)}
+.spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<button class="theme-toggle" onclick="toggleTheme()" id="themeBtn">🌙</button>
+<div class="card">
+  <div class="logo">
+    <div class="logo-icon">🎓</div>
+    <h1>ClassTrack</h1>
+    <p>Room / Section Officer System</p>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('login')">Login</button>
+    <button class="tab" onclick="switchTab('register')">Register</button>
+    <button class="tab" onclick="switchTab('reset')">Forgot Password</button>
+  </div>
+
+  <!-- LOGIN -->
+  <div class="fs active" id="fs-login">
+    <div id="loginMsg"></div>
+    <div class="fg"><label>Username</label><input type="text" id="loginUser" placeholder="Enter username" autocomplete="username"></div>
+    <div class="fg"><label>Password</label>
+      <div class="pw-wrap"><input type="password" id="loginPw" placeholder="Enter password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+        <button class="pw-btn" onclick="togglePw('loginPw',this)">👁️</button>
+      </div>
+    </div>
+    <button class="btn" id="loginBtn" onclick="doLogin()">Login</button>
+    <div class="admin-link"><a onclick="switchTab('register')">New officer? Register here</a></div>
+  </div>
+
+  <!-- REGISTER -->
+  <div class="fs" id="fs-register">
+    <div id="regMsg"></div>
+    <div class="fg"><label>Full Name *</label><input type="text" id="regName" placeholder="Your full name"></div>
+    <div class="fg"><label>Username *</label><input type="text" id="regUser" placeholder="Choose a username"></div>
+    <div class="fg"><label>Password *</label>
+      <div class="pw-wrap"><input type="password" id="regPw" placeholder="Min 6 characters">
+        <button class="pw-btn" onclick="togglePw('regPw',this)">👁️</button>
+      </div>
+    </div>
+    <div class="role-label">Your Role *</div>
+    <div class="role-grid" id="roleGrid">
+      <button class="role-btn" data-role="president" onclick="selectRole(this)"><span class="role-emoji">👑</span>President</button>
+      <button class="role-btn" data-role="vice_president" onclick="selectRole(this)"><span class="role-emoji">⭐</span>Vice Pres.</button>
+      <button class="role-btn" data-role="treasurer" onclick="selectRole(this)"><span class="role-emoji">💰</span>Treasurer</button>
+      <button class="role-btn" data-role="auditor" onclick="selectRole(this)"><span class="role-emoji">📊</span>Auditor</button>
+      <button class="role-btn" data-role="secretary" onclick="selectRole(this)"><span class="role-emoji">📋</span>Secretary</button>
+      <button class="role-btn" data-role="officer" onclick="selectRole(this)"><span class="role-emoji">👤</span>Officer</button>
+    </div>
+    <div class="mode-box" id="sectionModeBox">
+      <div class="mode-box-title">Section Setup</div>
+      <div class="mode-btns">
+        <button class="mode-btn active" onclick="setMode('join')">Join via Code</button>
+        <button class="mode-btn" onclick="setMode('create')">Create New Section</button>
+      </div>
+      <div class="sub show" id="sub-join">
+        <div class="fg" style="margin:0"><label>Section Code</label><input type="text" id="joinCode" placeholder="e.g. BSCS-A1B2C3" oninput="checkCode(this.value)"></div>
+        <div id="codePreview"></div>
+      </div>
+      <div class="sub" id="sub-create">
+        <div class="fg" style="margin-bottom:8px"><label>Section Name *</label><input type="text" id="secName" placeholder="e.g. BSCS 3A"></div>
+        <div class="fg" style="margin-bottom:8px"><label>School Year *</label><input type="text" id="secYear" placeholder="e.g. 2024-2025"></div>
+        <div class="fg" style="margin:0"><label>Adviser (optional)</label><input type="text" id="secAdviser" placeholder="Teacher name"></div>
+      </div>
+    </div>
+    <button class="btn" id="regBtn" onclick="doRegister()">Create Account</button>
+    <div class="back-link"><a onclick="switchTab('login')">Already have an account? Login</a></div>
+  </div>
+
+  <!-- FORGOT PASSWORD -->
+  <div class="fs" id="fs-reset">
+    <div id="resetMsg"></div>
+    <p style="font-size:.82rem;color:var(--text2);margin-bottom:14px">Enter your username to request a password reset from your admin.</p>
+    <div class="fg"><label>Username</label><input type="text" id="resetUser" placeholder="Your username"></div>
+    <button class="btn" id="resetBtn" onclick="doReset()">Request Password Reset</button>
+    <div class="back-link"><a onclick="switchTab('login')">Back to Login</a></div>
+  </div>
+</div>
+
+<script>
+const API = '/api';
+let selectedRole = '';
+let sectionMode = 'join';
+
+function toggleTheme() {
+  const d = document.documentElement;
+  const isDark = d.getAttribute('data-theme') === 'dark';
+  d.setAttribute('data-theme', isDark ? 'light' : 'dark');
+  document.getElementById('themeBtn').textContent = isDark ? '🌙' : '☀️';
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach((t,i) => { t.classList.toggle('active', ['login','register','reset'][i]===tab); });
+  document.querySelectorAll('.fs').forEach(f => f.classList.remove('active'));
+  document.getElementById('fs-'+tab).classList.add('active');
+}
+
+function togglePw(id, btn) {
+  const inp = document.getElementById(id);
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+  btn.textContent = inp.type === 'password' ? '👁️' : '🙈';
+}
+
+function selectRole(btn) {
+  document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('sel'));
+  btn.classList.add('sel');
+  selectedRole = btn.dataset.role;
+  const isLeader = ['president','vice_president'].includes(selectedRole);
+  document.getElementById('sectionModeBox').style.display = isLeader ? 'block' : '';
+  if (!isLeader) {
+    setMode('join');
+    document.querySelectorAll('.mode-btn').forEach((b,i) => b.disabled = i!==0);
+  } else {
+    document.querySelectorAll('.mode-btn').forEach(b => b.disabled = false);
+  }
+}
+
+function setMode(mode) {
+  sectionMode = mode;
+  document.querySelectorAll('.mode-btn').forEach((b,i) => b.classList.toggle('active', ['join','create'][i]===mode));
+  document.getElementById('sub-join').classList.toggle('show', mode==='join');
+  document.getElementById('sub-create').classList.toggle('show', mode==='create');
+}
+
+let codeTimer;
+async function checkCode(val) {
+  const preview = document.getElementById('codePreview');
+  clearTimeout(codeTimer);
+  if (!val || val.length < 3) { preview.innerHTML=''; return; }
+  codeTimer = setTimeout(async () => {
+    try {
+      const r = await fetch(`${API}/auth/section-info/${val.trim()}`);
+      const d = await r.json();
+      if (d.success) {
+        preview.innerHTML = `<div class="code-preview ok">✓ Section: <strong>${d.data.name}</strong> — ${d.data.school_year}</div>`;
+      } else {
+        preview.innerHTML = `<div class="code-preview bad">✗ Section not found</div>`;
+      }
+    } catch(e) { preview.innerHTML = ''; }
+  }, 500);
+}
+
+function showMsg(id, text, type='err') {
+  const el = document.getElementById(id);
+  el.innerHTML = `<div class="msg ${type}">${text}</div>`;
+}
+
+async function doLogin() {
+  const btn = document.getElementById('loginBtn');
+  const user = document.getElementById('loginUser').value.trim();
+  const pw = document.getElementById('loginPw').value;
+  if (!user || !pw) { showMsg('loginMsg', 'Please enter username and password'); return; }
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div> Logging in...';
+  try {
+    const r = await fetch(`${API}/auth/login`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ username:user, password:pw }) });
+    const d = await r.json();
+    if (!d.success) { showMsg('loginMsg', d.message); return; }
+    localStorage.setItem('ct_user', JSON.stringify(d.data));
+    if (d.token) localStorage.setItem('ct_token', d.token);
+    if (d.data.role === 'admin') { window.location.href = '/admin.html'; }
+    else { window.location.href = '/'; }
+  } catch(e) { showMsg('loginMsg', 'Connection error. Is the server running?'); }
+  finally { btn.disabled = false; btn.innerHTML = 'Login'; }
+}
+
+async function doRegister() {
+  const btn = document.getElementById('regBtn');
+  const full_name = document.getElementById('regName').value.trim();
+  const username = document.getElementById('regUser').value.trim();
+  const password = document.getElementById('regPw').value;
+  if (!full_name || !username || !password || !selectedRole) { showMsg('regMsg', 'Please fill all required fields and select a role'); return; }
+  if (password.length < 6) { showMsg('regMsg', 'Password must be at least 6 characters'); return; }
+  const body = { username, password, full_name, role: selectedRole };
+  if (sectionMode === 'join') {
+    body.section_code = document.getElementById('joinCode').value.trim();
+    if (!body.section_code) { showMsg('regMsg', 'Please enter a section code'); return; }
+  } else {
+    body.section_name = document.getElementById('secName').value.trim();
+    body.school_year = document.getElementById('secYear').value.trim();
+    body.adviser = document.getElementById('secAdviser').value.trim();
+    if (!body.section_name || !body.school_year) { showMsg('regMsg', 'Section name and school year required'); return; }
+  }
+  btn.disabled = true; btn.innerHTML = '<div class="spinner"></div> Creating account...';
+  try {
+    const r = await fetch(`${API}/auth/register`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    const d = await r.json();
+    if (!d.success) { showMsg('regMsg', d.message); return; }
+    showMsg('regMsg', '✓ Account created! Logging you in...', 'ok');
+    setTimeout(() => {
+      localStorage.setItem('ct_user', JSON.stringify(d.data));
+      if (d.token) localStorage.setItem('ct_token', d.token);
+      window.location.href = '/';
+    }, 1200);
+  } catch(e) { showMsg('regMsg', 'Connection error'); }
+  finally { btn.disabled = false; btn.innerHTML = 'Create Account'; }
+}
+
+async function doReset() {
+  const btn = document.getElementById('resetBtn');
+  const username = document.getElementById('resetUser').value.trim();
+  if (!username) { showMsg('resetMsg', 'Please enter your username'); return; }
+  btn.disabled = true; btn.innerHTML = '<div class="spinner"></div> Sending...';
+  try {
+    const r = await fetch(`${API}/auth/reset-request`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ username }) });
+    const d = await r.json();
+    if (!d.success) { showMsg('resetMsg', d.message); return; }
+    showMsg('resetMsg', '✓ ' + d.message, 'ok');
+  } catch(e) { showMsg('resetMsg', 'Connection error'); }
+  finally { btn.disabled = false; btn.innerHTML = 'Request Password Reset'; }
+}
+
+// If already logged in
+window.addEventListener('DOMContentLoaded', () => {
+  const user = JSON.parse(localStorage.getItem('ct_user') || 'null');
+  if (user) { window.location.href = user.role === 'admin' ? '/admin.html' : '/'; }
+});
+</script>
+</body>
+</html>
