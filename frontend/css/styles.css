@@ -472,3 +472,39 @@ table { min-width: 480px; }
 .chat-input { flex: 1; padding: 10px 14px; border-radius: 10px; border: 1.5px solid var(--border); background: var(--surface2); font-size: .9rem; color: var(--text); outline: none; font-family: inherit; transition: border-color .2s; min-height: 42px; }
 .chat-input:focus { border-color: var(--primary); background: var(--surface); }
 @media (max-width: 480px) { .chat-bubble { max-width: 88%; } }
+
+/* ===== FEES TABLE MOBILE FIX ===== */
+@media (max-width: 600px) {
+  /* Hide less important columns on mobile */
+  #page-fees table th:nth-child(2),
+  #page-fees table td:nth-child(2),
+  #page-fees table th:nth-child(6),
+  #page-fees table td:nth-child(6) {
+    display: none;
+  }
+
+  /* Make table fit screen */
+  #page-fees .tbl-wrap { overflow-x: hidden; }
+  #page-fees table { min-width: unset; width: 100%; font-size: .75rem; }
+  #page-fees th, #page-fees td { padding: 7px 6px; }
+
+  /* Name column smaller */
+  #page-fees table td:nth-child(1) { max-width: 90px; word-break: break-word; font-size: .75rem; }
+
+  /* Stack action buttons */
+  #page-fees .action-btns { flex-direction: column; gap: 3px; }
+  #page-fees .action-btns button { width: 100%; font-size: .7rem; padding: 4px 6px; min-height: 28px; }
+
+  /* Fee filter row wraps nicely */
+  #page-fees .filter-sel { font-size: .8rem; min-height: 36px; }
+  #page-fees .search-box input { font-size: .8rem !important; }
+
+  /* Summary cards smaller */
+  #page-fees .card-header .btn-group { flex-wrap: wrap; gap: 4px; }
+  #page-fees .card-header .btn-group button { font-size: .72rem; padding: 5px 8px; min-height: 30px; }
+}
+
+@media (max-width: 380px) {
+  #page-fees table { font-size: .7rem; }
+  #page-fees th, #page-fees td { padding: 5px 4px; }
+             }
