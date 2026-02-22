@@ -184,7 +184,7 @@ function openEditPayment(studentId, feeTypeId, studentName, feeName, feeAmount, 
       </div>
       <div class="form-group" style="grid-column:1/-1">
         <label>Notes <span class="text-muted text-sm">(optional)</span></label>
-        <input id="ep-notes" placeholder="e.g. May sukli ₱20, downpayment, installment...">
+        <input id="ep-notes" placeholder="e.g. Change given ₱20, downpayment, installment...">
       </div>
     </div>
     <div id="ep-change-box" style="border-radius:10px;padding:10px 14px;font-size:.88rem;font-weight:700;margin-bottom:14px;display:none"></div>
@@ -203,7 +203,7 @@ function calcChange(feeAmount) {
   const change = given - feeAmount;
   if (given <= 0) { box.style.display = 'none'; }
   else if (change > 0) { box.style.display='block'; box.style.background='#d1fae5'; box.style.color='#065f46'; box.innerHTML=`💵 Change to give back: <span style="font-size:1.1rem">${peso(change)}</span>`; }
-  else if (change < 0) { box.style.display='block'; box.style.background='#fef3c7'; box.style.color='#92400e'; box.innerHTML=`⚠️ Short by: <span style="font-size:1.1rem">${peso(Math.abs(change))}</span>`; }
+  else if (change < 0) { box.style.display='block'; box.style.background='#fef3c7'; box.style.color='#92400e'; box.innerHTML=`⚠️ Short by: <span style="font-size:1.1rem">${peso(Math.abs(change))}</span> (partial payment)`; }
   else { box.style.display='block'; box.style.background='#d1fae5'; box.style.color='#065f46'; box.innerHTML=`✅ Exact payment — no change`; }
 }
 
@@ -250,18 +250,18 @@ function openBulkPaid() {
   const ftOpts = feeTypes.map(ft => `<option value="${ft.id}" data-amount="${ft.amount}">${esc(ft.name)} — ${peso(ft.amount)}</option>`).join('');
   openModal('⚡ Bulk Mark as Paid', `
     <div style="margin-bottom:14px;font-size:.85rem;color:var(--text2);background:var(--surface2);padding:10px 14px;border-radius:9px">
-      💡 Ilagay ang mga apelyido o pangalan (isa bawat linya). Automatic hahanapin at imi-mark bilang paid!
+      💡 Enter last names or first names (one per line). We'll find them and mark them as paid automatically!
     </div>
     <div class="form-grid">
       <div class="form-group" style="grid-column:1/-1">
-        <label>Piliin ang Fee *</label>
+        <label>Select Fee *</label>
         <select id="bulk-fee-select" onchange="previewBulkMatch()">
-          <option value="">— Pumili ng fee —</option>
+          <option value="">— Select a fee —</option>
           ${ftOpts}
         </select>
       </div>
       <div class="form-group" style="grid-column:1/-1">
-        <label>Mga Pangalan * <span class="text-muted text-sm">(isa bawat linya)</span></label>
+        <label>Names * <span class="text-muted text-sm">(one per line)</span></label>
         <textarea id="bulk-names-input" rows="6" placeholder="Macam&#10;Vicente&#10;Pedro" style="width:100%;padding:10px;border:1.5px solid var(--border);border-radius:8px;background:var(--surface2);color:var(--text1);resize:vertical;font-size:.9rem" oninput="previewBulkMatch()"></textarea>
       </div>
     </div>
@@ -300,9 +300,9 @@ function previewBulkMatch() {
   window._bulkFeeId     = feeId;
   window._bulkFeeAmount = parseFloat(feeSelect.options[feeSelect.selectedIndex]?.dataset?.amount || 0);
   let html = '';
-  if (matched.length)     html += `<div style="background:#d1fae5;border-radius:8px;padding:10px 14px;margin-bottom:8px;font-size:.83rem"><strong style="color:#065f46">✅ ${matched.length} na imi-mark as paid:</strong><br>${matched.map(s => `<span style="display:inline-block;background:#a7f3d0;border-radius:5px;padding:2px 8px;margin:2px;color:#065f46">${esc(s.last_name)}, ${esc(s.first_name)}</span>`).join('')}</div>`;
-  if (alreadyPaid.length) html += `<div style="background:#fef3c7;border-radius:8px;padding:10px 14px;margin-bottom:8px;font-size:.83rem"><strong style="color:#92400e">⚠️ Paid na (lalaktawan):</strong><br>${alreadyPaid.map(n => `<span style="display:inline-block;background:#fde68a;border-radius:5px;padding:2px 8px;margin:2px;color:#92400e">${esc(n)}</span>`).join('')}</div>`;
-  if (notFound.length)    html += `<div style="background:#fee2e2;border-radius:8px;padding:10px 14px;font-size:.83rem"><strong style="color:#991b1b">❌ Hindi nahanap:</strong><br>${notFound.map(n => `<span style="display:inline-block;background:#fecaca;border-radius:5px;padding:2px 8px;margin:2px;color:#991b1b">${esc(n)}</span>`).join('')}</div>`;
+  if (matched.length)     html += `<div style="background:#d1fae5;border-radius:8px;padding:10px 14px;margin-bottom:8px;font-size:.83rem"><strong style="color:#065f46">✅ ${matched.length} will be marked as paid:</strong><br>${matched.map(s => `<span style="display:inline-block;background:#a7f3d0;border-radius:5px;padding:2px 8px;margin:2px;color:#065f46">${esc(s.last_name)}, ${esc(s.first_name)}</span>`).join('')}</div>`;
+  if (alreadyPaid.length) html += `<div style="background:#fef3c7;border-radius:8px;padding:10px 14px;margin-bottom:8px;font-size:.83rem"><strong style="color:#92400e">⚠️ Already paid (will be skipped):</strong><br>${alreadyPaid.map(n => `<span style="display:inline-block;background:#fde68a;border-radius:5px;padding:2px 8px;margin:2px;color:#92400e">${esc(n)}</span>`).join('')}</div>`;
+  if (notFound.length)    html += `<div style="background:#fee2e2;border-radius:8px;padding:10px 14px;font-size:.83rem"><strong style="color:#991b1b">❌ Not found:</strong><br>${notFound.map(n => `<span style="display:inline-block;background:#fecaca;border-radius:5px;padding:2px 8px;margin:2px;color:#991b1b">${esc(n)}</span>`).join('')}</div>`;
   preview.innerHTML = html;
   if (submitBtn) submitBtn.disabled = matched.length === 0;
 }
