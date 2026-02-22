@@ -19,6 +19,7 @@ const adminRouter = require('./routes/admin');
 const chatRouter = require('./routes/chat');
 
 const app = express();
+app.set('trust proxy', 1);
 const server = http.createServer(app);
 const PORT = process.env.PORT || 3000;
 
