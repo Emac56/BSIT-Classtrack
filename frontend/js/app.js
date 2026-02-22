@@ -6,6 +6,7 @@ function doLogout() { localStorage.removeItem('ct_user'); localStorage.removeIte
 const PERMS = {
   president:      ['dashboard','students','attendance','fees','fee-types','announcements','members','profile','game','chat'],
   vice_president: ['dashboard','students','attendance','fees','fee-types','announcements','members','profile','game','chat'],
+  member:         ['dashboard','announcements','fees','profile','game','chat'],
   treasurer:      ['dashboard','fees','fee-types','profile','game','chat'],
   auditor:        ['dashboard','fees','profile','game','chat'],
   secretary:      ['dashboard','attendance','students','announcements','profile','game','chat'],
