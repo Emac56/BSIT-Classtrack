@@ -1,4 +1,4 @@
-// routes/ai.js — AI Proxy using OpenRouter (FREE models)
+// routes/ai.js — AI Proxy using Groq (FREE - 500K tokens/day)
 const express = require('express');
 const router  = express.Router();
 const { requireAuth } = require('../middleware/auth');
@@ -10,9 +10,9 @@ router.post('/chat', requireAuth, async (req, res) => {
     return res.status(400).json({ success: false, message: 'Invalid messages format.' });
   }
 
-  const apiKey = process.env.OPENROUTER_API_KEY;
+  const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) {
-    return res.status(503).json({ success: false, message: 'AI service not configured. Add OPENROUTER_API_KEY in Railway environment variables.' });
+    return res.status(503).json({ success: false, message: 'AI service not configured. Add GROQ_API_KEY in Railway environment variables.' });
   }
 
   try {
@@ -20,17 +20,15 @@ router.post('/chat', requireAuth, async (req, res) => {
     if (system) allMessages.push({ role: 'system', content: system });
     allMessages.push(...messages.slice(-20));
 
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + apiKey,
-        'HTTP-Referer': 'https://classtrack.app',
-        'X-Title': 'ClassTrack'
+        'Authorization': 'Bearer ' + apiKey
       },
       body: JSON.stringify({
-        model: 'meta-llama/llama-3.3-70b-instruct:free',
-        max_tokens: 1000,
+        model: 'llama-3.1-8b-instant',
+        max_tokens: 800,
         messages: allMessages
       })
     });
@@ -39,7 +37,7 @@ router.post('/chat', requireAuth, async (req, res) => {
       const err = await response.json().catch(() => ({}));
       return res.status(response.status).json({
         success: false,
-        message: err.error?.message || 'OpenRouter API error.'
+        message: err.error?.message || 'Groq API error.'
       });
     }
 
@@ -55,4 +53,4 @@ router.post('/chat', requireAuth, async (req, res) => {
 });
 
 module.exports = router;
-          
+                                 
