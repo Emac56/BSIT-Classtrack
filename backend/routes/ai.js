@@ -29,7 +29,7 @@ router.post('/chat', requireAuth, async (req, res) => {
         'X-Title': 'ClassTrack'
       },
       body: JSON.stringify({
-        model: 'meta-llama/llama-3.1-8b-instruct:free',
+        model: 'mistralai/mistral-7b-instruct:free',
         max_tokens: 1000,
         messages: allMessages
       })
@@ -55,3 +55,4 @@ router.post('/chat', requireAuth, async (req, res) => {
 });
 
 module.exports = router;
+  
